@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <strings.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -12,6 +13,7 @@
 #include <sys/wait.h>
 #include <pthread.h>
 #include "format.h"
+
 
 static void *Handling(void *arg){
 	int newfd;
@@ -25,54 +27,54 @@ static void *Handling(void *arg){
 		bzero(bufferr_receiver, sizeof(bufferr_receiver));
 
 		read(newfd,bufferr_receiver,sizeof(bufferr_receiver));
-		if((char)bufferr_receiver[0] == '0'){ // FileLocationRequest (bufferr_receiver[0] == 32)
+		if((char)bufferr_receiver[0] == 1){ // FileLocationRequest (bufferr_receiver[0] == 32)
 					unsigned char packet_respond[2000];
 					bzero(packet_respond, sizeof(packet_respond));
 					int point_respon = 5;// location to save ip addresses in packet_respond
-					char md5[8],name[16] = "./";
+					char name[100],link[100] = "./";
 					//struct in_addr IP[256];
 					char num_of_host = 0;
 					int size_of_file = 0;
-					memcpy(&md5,bufferr_receiver[1],sizeof(uint8_t));
+					memcpy(&name,(void *)bufferr_receiver[1],sizeof(bufferr_receiver)-1);
 
-					strcpy(name, "./");
-					strcat(name,md5);
-					if(access(name,F_OK) == -1){
+					strcpy(link, "./");
+					strcat(link,name);
+					if(access(link,F_OK) == -1){
 
 
 						printf("file not exists!");
 						int zero = 0;
 						char zero_char = 0;
-						memcpy(packet_respond,&zero,sizeof(int));
-						memcpy(&(packet_respond[4]),&zero_char,sizeof(char));
+						memcpy(packet_respond,(void *)&zero,sizeof(int));
+						memcpy(&(packet_respond[4]),(void *)&zero_char,sizeof(char));
 
 					}
 					else{
-						FILE *md5_file = fopen(md5,"r");
+						FILE *name_file = fopen(link,"r");
 						while(1){
 
-							if (feof(md5_file)){
+							if (feof(name_file)){
 									break;
 							}
 							struct in_addr ip;
 							char line[30];
-							fgets(line, 40, (FILE*)md5_file);
+							fgets(line, 40, (FILE*)name_file);
 							char *ipstr,*sizestr;
 							ipstr = (char *) malloc(sizeof(char) * 18);// maximum of ip addr is 15 characters
 							sizestr = (char *) malloc(sizeof(char) * 20);
 
 							int space_index = strcspn (line," ");
-							memcpy(ipstr,line,space_index);
-							memcpy(sizestr,&(line[space_index+1]),(int)strlen(line)-space_index);
+							memcpy(ipstr,(void *)line,space_index);
+							memcpy(sizestr,(void *)&(line[space_index+1]),(int)strlen(line)-space_index);
 
 							int size_ = atoi(sizestr);
 							if(size_ != size_of_file){
 								size_of_file = size_;
-								memcpy(packet_respond,&size_of_file,sizeof(int));// write size of file
+								memcpy(packet_respond,(void *)&size_of_file,sizeof(int));// write size of file
 							}
 							inet_pton(AF_INET,ipstr,&ip);
 							num_of_host++;
-							memcpy(&(packet_respond[point_respon]),&ip,sizeof(struct in_addr)); // write one ip address
+							memcpy(&(packet_respond[point_respon]),(void *)&ip,sizeof(struct in_addr)); // write one ip address
 							point_respon += sizeof(struct in_addr);
 
 							free(ipstr);
@@ -80,27 +82,33 @@ static void *Handling(void *arg){
 
 
 						}
-						memcpy(&(packet_respond[4]),&num_of_host,sizeof(char));// write total number of ip addresses
-						fclose(md5_file);
+						memcpy(&(packet_respond[4]),(void *)&num_of_host,sizeof(char));// write total number of ip addresses
+						fclose(name_file);
 
 					}
 					write(newfd,packet_respond,sizeof(packet_respond));
 		}
+
 		else{ //ListFileReport
 			int point = 1;
-			uint8_t quantity;
-		//	struct ListFileReport *report;
-			//report = (struct ListFileReport *) malloc(sizeof(struct ListFileReport));
-			memcpy(&quantity,bufferr_receiver[point],sizeof(uint8_t));
-			point++;
-			int size_file_zone;
-			size_file_zone = 1 + quantity*8;
-			char md5[8];
+			int quantity=0;
+			memcpy(&quantity,bufferr_receiver[point],sizeof(int));
+			point+=4;
+			char size_name = 0;
+			char name[255];
 			int size_file = 0;
 			for(int i = 0;i < quantity;i++){
-					memcpy(md5,bufferr_receiver[point],8);
-					point+=8;
-					FILE *md5_file = fopen(md5,"a");
+
+					memcpy(&size_name,(void*)bufferr_receiver[point],sizeof(char));
+					point++;
+					memcpy(name,bufferr_receiver[point],(int)size_name);
+					point+=(int)size_name;
+					memcpy(&size_file,(void*)bufferr_receiver[point],sizeof(int));
+
+					char *link;
+					link = (char *) malloc(sizeof(char)*255);
+					strcpy(link, "./");
+					strcat(link,name);
 
 					struct sockaddr_in addr;
 				  socklen_t addr_size = sizeof(struct sockaddr_in);
@@ -109,14 +117,42 @@ static void *Handling(void *arg){
 					clientip = (char *) malloc(sizeof(char)*20);
 				  strcpy(clientip, inet_ntoa(addr.sin_addr));
 
-					//fwrite(clientip,sizeof(char),20,md5_file);
-					fprintf(md5_file,"%s ",clientip);
-					//memcpy(&size_file,bufferr_receiver[size_file_zone + i*sizeof(int)],sizeof(int));
-					memcpy(&size_file,bufferr_receiver[size_file_zone + i*4],4);
-				//	char size[20];
-					//sprintf(str, "%d", someInt);
-					fprintf(md5_file,"%d\n",size_file);
-					fclose(md5_file);
+					int flag = 1;
+					FILE *nchek_file = fopen(link,"r");
+
+					while(1){
+						if(feof(nchek_file)){
+							break;
+						}
+						char *line;
+						line = (char *) malloc(sizeof(char) * 30);
+						fgets(line, 30, (FILE*)nchek_file);
+						char *ipstr;
+						ipstr = (char *) malloc(sizeof(char) * 18);// maximum of ip addr is 15 characters
+
+
+						int space_index = strcspn (line," ");
+						memcpy(ipstr,(void *)line,space_index);
+						if(strcmp(clientip,ipstr)){
+							flag =0;
+							free(ipstr);
+							free(line);
+							break;
+						}
+						free(ipstr);
+						free(line);
+					}
+					fclose(nchek_file);
+
+					if(flag){
+						FILE *name_file = fopen(link,"a");
+						fprintf(name_file,"%s ",clientip);
+						fprintf(name_file,"%d\n",size_file);
+						fclose(name_file);
+						free(clientip);
+						free(link);
+					}
+
 			}
 
 		}
@@ -127,9 +163,6 @@ static void *Handling(void *arg){
 int main(int argc,char **agrv){
 	int sockfd;
 	int *newfd;
-
-	//fd_set rfds;
-	//fd_set afds;
 
 	pthread_t tid;
 	struct sockaddr_in sockaddr,cliaddr;

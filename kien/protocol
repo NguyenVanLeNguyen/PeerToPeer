@@ -1,0 +1,17 @@
+requestFileLocation:
+type:char (type=1)
+filename:char[]
+
+respondLocation:
+numberCient: char
+//moi client
+long IP;
+bandwidth:char;
+
+clientUpdateFileLocation  
+type :char(type=2)
+numberfile: int
+//moi file
+lengthFilename: char
+filename: char[]
+size:size_t

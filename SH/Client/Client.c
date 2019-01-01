@@ -20,13 +20,14 @@ typedef struct FileLocationRequest
 
 typedef struct ClientAddress
 {
-	int IP;
+	long IP;
 	uint16_t bandwidth; //Mbps
 };
 
 typedef struct FileLocationRespond
 {
 	uint64_t fileSize;
+	char numClient;
 	struct ClientAddress address[20];
 };
 
@@ -37,16 +38,14 @@ typedef struct RequestData
 	uint64_t FinishByte;
 };
 
-struct FileLocationRespond requestListClient(char *srvIP, int srvPort, char *filename ) {
+struct FileLocationRespond *requestListClient(char *srvIP, int srvPort, char *filename ) {
 	int sockfd;
 	struct sockaddr_in srv_addr;
-	//int listIP[20];
-	int IP;
+	long IP;
 	uint16_t bandwidth;
-	int count=0;
 	//int r;
 	//int w;
-	struct FileLocationRespond *respond=malloc(sizeof(struct FileLocationRespond));;
+	struct FileLocationRespond *respond=malloc(sizeof(struct FileLocationRespond));
 	sockfd=socket(AF_INET,SOCK_STREAM,0);
 	if (sockfd<0) {
 		perror("Error:");
@@ -66,19 +65,23 @@ struct FileLocationRespond requestListClient(char *srvIP, int srvPort, char *fil
 	uint64_t fileSize;
 	read(sockfd,&fileSize,sizeof(fileSize));
 	respond->fileSize=fileSize;
-	struct ClientAddress address[20];
-	while (1==1) {
+	char numClient;
+	read(sockfd,&numClient,sizeof(numClient));
+	respond->numClient=numClient;
+	for (int i=0;i<numClient;i++) {
 		read(sockfd,&IP,sizeof(IP));
 		read(sockfd,&bandwidth,sizeof(bandwidth));
-		respond->address[count].IP=IP;
-		respond->address[count].bandwidth=bandwidth;
-		count++;
+		respond->address[i].IP=IP;
+		respond->address[i].bandwidth=bandwidth;
 	}
-	return *respond;
+	close(sockfd);
+	return respond;
+	
 
 }
 
-int downloadfile(char *IP, int port, char *filename, uint64_t start, uint64_t finish, char *tmpfile) {
+
+int downloadfile(long IP, int port, char *filename, uint64_t start, uint64_t finish, char *tmpfile) {
 	int sockfd;
 	struct sockaddr_in addr;
 	char buffer[1024];
@@ -92,7 +95,7 @@ int downloadfile(char *IP, int port, char *filename, uint64_t start, uint64_t fi
 	}
 	bzero((char *) &addr, sizeof(addr));
 	addr.sin_family=AF_INET;
-	addr.sin_addr.s_addr = inet_addr(IP);
+	addr.sin_addr.s_addr = IP;
 	addr.sin_port=htons(port);
 	if (connect(sockfd,(struct sockaddr *) &addr,sizeof(addr)) < 0) {	//Connect to server
 		perror("Error connecting:");
@@ -131,17 +134,40 @@ int downloadfile(char *IP, int port, char *filename, uint64_t start, uint64_t fi
 }
 
 int main(int argc, char *argv[]) {
-	char IP[15];
-	strcpy(IP,"127.0.0.1");
-	char filename[20];
-	strcpy(filename,"lab2.png");
-	char tmpfile[20];
-	strcpy(tmpfile,"test");
-	int port=1508;
-	uint64_t start=0;
-	uint64_t finish1=35342;
-	uint64_t finish=70684;
-	downloadfile(IP,port,filename,start,finish1,tmpfile);
-	downloadfile(IP,port,filename,finish1+1,finish,tmpfile);
-	return 0;
+	char fileName[20];
+	char srvIP[20];
+	char str[20];
+	int srvPort;
+	FILE *fp;
+	uint64_t start;
+	uint64_t finish;
+	fp=fopen("kien.conf","r");
+	printf("%s\n","Xin chao moi nguoi, cam on da su dung phan mem download file \"kien v1.0\" !, moi van de xin lien he tytotum0003@gmail.com");
+	while (fscanf(fp,"%s",str)!= EOF) {
+		if (strcmp(str,"indexServerIP")==0) {
+			fscanf(fp,"%s",srvIP);
+		}
+		else if (strcmp(str,"indexServerPort")==0) {
+			fscanf(fp,"%d",&srvPort);
+		}
+	}
+	fclose(fp);
+	while(1==1) {
+		printf("%s\n","Xin moi ban nhap ten file: " );
+		scanf("%s",fileName);
+		printf("%s\n","Dang tai file, xin vi long cho!" );
+		struct FileLocationRespond *respond;
+		respond=requestListClient(srvIP,srvPort,fileName);
+		uint64_t size=respond->fileSize;
+		int blocksize=size/respond->numClient+1;
+		pthread_t thread[20];
+		for (int i=0;i<respond->numClient;i++) {
+			start=i*blocksize;
+			if(i<respond->numClient-1) finish=(i+1)*blocksize-1;
+			else finish=size-1;
+			//downloadfile(respond->address[i].IP,1508,fileName,start,finish,fileName);
+			//pthread_create(&thread[i],NULL,downloadfile,(void *) );
+		}
+		printf("%s\n","Da tai xong, xin vui long kiem tra lai!" );
+	}
 }

@@ -3,6 +3,7 @@ type:char (type=1)
 filename:char[]
 
 respondLocation:
+size: uint64_t
 numberCient: char
 //moi client
 long IP;

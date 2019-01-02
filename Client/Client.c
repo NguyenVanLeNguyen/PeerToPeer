@@ -16,13 +16,13 @@ long sizes(FILE *file){
 	return value;
 }
 
-int Creat_ClientUpdateFileLocation_Packet(char *ClientUpdateFileLocation){
+int Creat_ClientUpdateFileLocation_Packet(int *sockfd){
 	struct dirent *de=NULL;
 	DIR *d=NULL;
-	//unsigned char ClientUpdateFileLocation[2000];
-	bzero(ClientUpdateFileLocation,2000);
-	ClientUpdateFileLocation[0] = 2;
-	d=opendir("Server");
+	unsigned char Report[2000];
+	bzero(Report,2000);
+	Report[0] = 2;
+	d=opendir("Data");
 	if(d == NULL)
 	{
 	   perror("Couldn't open directory");
@@ -35,7 +35,6 @@ int Creat_ClientUpdateFileLocation_Packet(char *ClientUpdateFileLocation){
 	int size =0;
 	const int *ptrsize = &size;
 	int point = 5;
-//  memcpy((ClientUpdateFileLocation+1),&numbe_of_file,sizeof(int));
 
 	while(de = readdir(d)){
 
@@ -48,42 +47,72 @@ int Creat_ClientUpdateFileLocation_Packet(char *ClientUpdateFileLocation){
 
 			FILE *ofile;
 	    char *name,*namef;
-			//const char *ptrnamef = namef;
+
 	    name = (char *) malloc(100);
 	    namef = (char *) malloc(100);
 	    strcpy(name,de->d_name);
-	    strcpy(namef, "./Server/");
+	    strcpy(namef, "./Data/");
 	    strcat(namef,name);
-	    //printf("%s ",namef );
 	    ofile = fopen(namef,"rb");
 	    size = (int)sizes(ofile);
-        bcopy(&lname,(ClientUpdateFileLocation+point),sizeof(char));
+        bcopy(&lname,(Report+point),sizeof(char));
         point++;
-        //printf("%d \n",point);
-        bcopy(name,(ClientUpdateFileLocation+point),(int)lname+1);
+        bcopy(name,(Report+point),(int)lname+1);
 				point = point + (int)lname;
-      //  printf("%d \n",point);
-
-        bcopy(&size,(ClientUpdateFileLocation+point),sizeof(int));
+        bcopy(&size,(Report+point),sizeof(int));
         point = point + sizeof(int);
         free(name);
 		    free(namef);
 		    fclose(ofile);
-	     // printf("%d \n",point);
+
 	  }
 
 	}
-		bcopy(&numbe_of_file,(ClientUpdateFileLocation+1),sizeof(int));
-   //memcpy(&ClientUpdateFileLocation[1],(char *)&numbe_of_file,sizeof(int));
-
-    printf("%ld\n",strlen(ClientUpdateFileLocation));
-    printf("%d\n\n",ClientUpdateFileLocation[1] );
-    //printf("%d\n",ClientUpdateFileLocation[1] );
-    //for(int i =0; i <= point;i++)
-    //if(ClientUpdateFileLocation[i] == '\0')
-        //printf("%d\n",i);
+		bcopy(&numbe_of_file,(Report+1),sizeof(int));
+    printf("%ld\n",strlen(Report));
+    printf("%d\n\n",Report[1] );
+		write(*sockfd,Report,point);
      return point;
 	}
+struct FileLocationRespond Request_dowload(int *sockfd){
+	struct FileLocationRespond respond_from_client;
+	char request[258];
+	char respond[200];
+	char name[256];
+
+	request[0] = 1;
+	printf("Please enter the file's name: ");
+	bzero(name,sizeof(name));
+	scanf("%s",name);
+	printf("%s\n",name);
+	memcpy((request+1),name,strlen(name));
+	write(*sockfd,request,strlen(name)+1);
+
+	int rep = read(*sockfd,respond,sizeof(respond));
+	printf("rep: %d\n",rep);
+	int size_of_file = 0;
+	memcpy(&size_of_file,respond,sizeof(int));
+	//printf("size: %d\n",size_of_file);
+	respond_from_client.fileSize = size_of_file;
+	char numh = 0;
+	memcpy(&numh,respond+4,sizeof(char));
+
+	respond_from_client.total = (int)numh;
+
+
+
+	//struct in_addr list_host[num_of_host];
+	for(int i = 0; i < respond_from_client.total;i++){
+		memcpy((respond_from_client.IP+i),respond+5+(i*4),sizeof(struct in_addr));
+
+		char *clientip;
+		clientip = (char *) malloc(sizeof(char)*20);
+		strcpy(clientip, inet_ntoa(respond_from_client.IP[i]));
+		printf("%s\n",clientip );
+	}
+	//respond_from_client.IP = list_host;
+	return respond_from_client;
+}
 
 int main(int argc,char **agrv){
 
@@ -140,9 +169,9 @@ int main(int argc,char **agrv){
 				perror("connect");
 				return 0;
 			}
-			char Report[2000];
-			int size_of_report = Creat_ClientUpdateFileLocation_Packet(Report);
-			write(sockfd,Report,size_of_report);
+			//char Report[2000];
+			int size_of_report = Creat_ClientUpdateFileLocation_Packet(&sockfd);
+
 			close(sockfd);
 			return 0;
 
@@ -154,38 +183,14 @@ int main(int argc,char **agrv){
 				perror("connect");
 				return 0;
 			}
-			char Request[258];
-			char Respon[200];
-			char buffer[256];
 
-			Request[0] = 1;
-			printf("Please enter the file's name: ");
-			bzero(buffer,sizeof(buffer));
-			scanf("%s",buffer);
-			printf("%s\n",buffer);
-			memcpy((Request+1),buffer,strlen(buffer));
-			write(sockfd,Request,strlen(buffer)+1);
+			struct FileLocationRespond respond_from_client = Request_dowload(&sockfd);
+			printf("%d\n",respond_from_client.fileSize);
 
-			int rep = read(sockfd,Respon,sizeof(Respon));
-			printf("rep: %d\n",rep);
-			int size_of_file = 0;
-			memcpy(&size_of_file,Respon,sizeof(int));
-			printf("size: %d\n",size_of_file);
-			char numh = 0;
-			memcpy(&numh,Respon+4,sizeof(char));
-			int num_of_host = 0;
-			num_of_host = (int)numh;
-			printf("%d\n",num_of_host);
-
-			struct in_addr list_host[num_of_host];
-			for(int i = 0; i < num_of_host;i++){
-				memcpy((list_host+i),Respon+5+(i*4),sizeof(struct in_addr));
-				char *clientip;
-				clientip = (char *) malloc(sizeof(char)*20);
-				strcpy(clientip, inet_ntoa(list_host[i]));
-				printf("%s\n",clientip );
-			}
-
+			// for(int i = 0; i < respond_from_client.total;i++){
+			//
+			//
+			// }
 			close(sockfd);
 			return 0;
 

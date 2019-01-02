@@ -16,10 +16,9 @@ struct ListFileReport{
 };
 
 struct FileLocationRespond{
-	uint64_t fileSize;
+	unsigned int fileSize;
 	uint8_t total;
 	struct in_addr IP[256];
-	unsigned short bandwidth[256];
 };
 
 struct RequestData{

@@ -60,11 +60,15 @@ static void *Handling(void *arg){
 
 							struct in_addr ip;
 							char line[30];
+						//	int size_ = 0;
 							fgets(line, 40,name_file);
+							//fscanf(name_file,"%s",line);
+							printf("%s\n",line);
+						//	fscanf(name_file,"%d",&size_);
 							//fseek(name_file,1,SEEK_CUR);
 							char *ipstr,*sizestr;
-							ipstr = (char *) malloc(sizeof(char) * 18);// maximum of ip addr is 15 characters
-							sizestr = (char *) malloc(sizeof(char) * 20);
+							 ipstr = (char *) malloc(sizeof(char) * 18);// maximum of ip addr is 15 characters
+							 sizestr = (char *) malloc(sizeof(char) * 20);
 
 							int space_index = strcspn (line," ");
 							memcpy(ipstr,(void *)line,space_index);
@@ -92,6 +96,7 @@ static void *Handling(void *arg){
 
 						}
 						num_of_host--;
+						printf("num_of_host: %d\n",num_of_host );
 						memcpy((packet_respond+4),&num_of_host,sizeof(char));// write total number of ip addresses
 						fclose(name_file);
 

@@ -11,24 +11,22 @@
 //#include "kien.h"
 #define clientport 1508
 #define serverport 8051
+#define BLOCKSIZE 8192
 
+int blockNum;
+int totalBlock;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 typedef struct FileLocationRequest
 {
 	char type;
 	char filename[20];	
 };
 
-typedef struct ClientAddress
-{
-	long IP;
-	uint16_t bandwidth; //Mbps
-};
-
 typedef struct FileLocationRespond
 {
 	uint64_t fileSize;
 	char numClient;
-	struct ClientAddress address[20];
+	struct in_addr address[20];
 };
 
 typedef struct RequestData
@@ -36,6 +34,12 @@ typedef struct RequestData
 	char fileName[20];
 	uint64_t StartByte;
 	uint64_t FinishByte;
+};
+typedef struct threadVar 
+{
+	int sockfd;
+	int fileSize; 
+	char fileName[20];
 };
 
 struct FileLocationRespond *requestListClient(char *srvIP, int srvPort, char *filename ) {
@@ -72,7 +76,6 @@ struct FileLocationRespond *requestListClient(char *srvIP, int srvPort, char *fi
 		read(sockfd,&IP,sizeof(IP));
 		read(sockfd,&bandwidth,sizeof(bandwidth));
 		respond->address[i].IP=IP;
-		respond->address[i].bandwidth=bandwidth;
 	}
 	close(sockfd);
 	return respond;
@@ -80,9 +83,25 @@ struct FileLocationRespond *requestListClient(char *srvIP, int srvPort, char *fi
 
 }
 
+void *doit(void *arg){
+	pthread_detach(pthread_self());
+	struct threadVar tv= *((threadVar *) arg);
 
-int downloadfile(long IP, int port, char *filename, uint64_t start, uint64_t finish, char *tmpfile) {
-	int sockfd;
+	while (blockNum<totalBlock){
+		pthread_mutex_lock(&mutex);
+		blockNum++;
+		pthread_mutex_unlock(&mutex);
+		if (blockNum>totalBlock) break;
+		if (blockNum<totalBlock-1) 
+			downloadfile(sockfd,tv.sockfd,tv.fileName,(blockNum-1)*BLOCKSIZE,blockNum*BLOCKSIZE-1,tv.filename);
+		else downloadfile(sockfd,tv.sockfd,tv.fileName,blockNum*BLOCKSIZE,tv.fileSize-1,tv.filename);
+		
+	}
+
+}
+
+int downloadfile(int sockfd, char *filename, uint64_t start, uint64_t finish, char *tmpfile) {
+	/*int sockfd;
 	struct sockaddr_in addr;
 	char buffer[1024];
 	int r;
@@ -100,7 +119,7 @@ int downloadfile(long IP, int port, char *filename, uint64_t start, uint64_t fin
 	if (connect(sockfd,(struct sockaddr *) &addr,sizeof(addr)) < 0) {	//Connect to server
 		perror("Error connecting:");
 		return 1;
-	}
+	}*/
 	l=strlen(filename);
 	w=write(sockfd,&l,sizeof(int));
 	if (w<0) {
@@ -137,7 +156,10 @@ int main(int argc, char *argv[]) {
 	char fileName[20];
 	char srvIP[20];
 	char str[20];
+	struct threadVar tv;
 	int srvPort;
+	struct sockaddr_in addr;
+	int sockfd[20];
 	FILE *fp;
 	uint64_t start;
 	uint64_t finish;
@@ -159,15 +181,33 @@ int main(int argc, char *argv[]) {
 		struct FileLocationRespond *respond;
 		respond=requestListClient(srvIP,srvPort,fileName);
 		uint64_t size=respond->fileSize;
-		int blocksize=size/respond->numClient+1;
+		if (size%BLOCKSIZE!=0)
+			totalBlock=size/BLOCKSIZE+1;
+		else totalBlock=size/BLOCKSIZE;
 		pthread_t thread[20];
 		for (int i=0;i<respond->numClient;i++) {
-			start=i*blocksize;
-			if(i<respond->numClient-1) finish=(i+1)*blocksize-1;
-			else finish=size-1;
+			sockfd[i]=socket(AF_INET,SOCK_STREAM,0);
+			if (sockfd[i]<0) {
+				perror("Error:");
+				return 1;
+			}
+			bzero((char *) &addr, sizeof(addr));
+			addr.sin_family=AF_INET;
+			addr.sin_addr.s_addr = respond->address[i].IP;
+			addr.sin_port=htons(1508);
+			if (connect(sockfd[i],(struct sockaddr *) &addr,sizeof(addr)) < 0) {	//Connect to server
+				perror("Error connecting:");
+				return 1;
+			}
+		}
+		for (int i=0;i<respond->numClient;i++) {
+			tv.sockfd=sockfd[i];
+			tv.fileSize=size;
+			strcpy(tv.fileName,fileName);
 			//downloadfile(respond->address[i].IP,1508,fileName,start,finish,fileName);
-			//pthread_create(&thread[i],NULL,downloadfile,(void *) );
+			pthread_create(&thread[i],NULL,&doit,(void *)tv);
 		}
 		printf("%s\n","Da tai xong, xin vui long kiem tra lai!" );
 	}
+
 }

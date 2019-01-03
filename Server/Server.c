@@ -144,27 +144,26 @@ static void *Handling(void *arg){
 					int flag = 1;
 					if(!(access(link,F_OK) == -1)){
 					FILE *nchek_file = fopen(link,"r");
-
+					//printf("%s\n","ton tai");
 					while(1){
-						if(feof(nchek_file)){
-							break;
-						}
-						char *line;
-						line = (char *) malloc(sizeof(char) * 30);
-						fgets(line, 30, (FILE*)nchek_file);
+
 						char *ipstr;
 						ipstr = (char *) malloc(sizeof(char) * 18);// maximum of ip addr is 15 characters
 
-						int space_index = strcspn (line," ");
-						memcpy(ipstr,(void *)line,space_index);
-						if(strcmp(clientip,ipstr)){
+						fscanf(nchek_file,"%s",ipstr);
+						if(feof(nchek_file)){
+							break;
+						}
+						if(!strcmp(clientip,ipstr)){
 							flag =0;
+							printf("clientip: %s\n", clientip);
+							printf("ipstr: %s\n", ipstr);
 							free(ipstr);
-							free(line);
+
 							break;
 						}
 						free(ipstr);
-						free(line);
+						
 					}
 					fclose(nchek_file);
 					}

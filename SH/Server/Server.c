@@ -53,10 +53,11 @@ void *doit(void *arg){
 		read(clientsockfd,&start,sizeof(uint32_t));
 		read(clientsockfd,&finish,sizeof(uint32_t));
 		printf("%d %d\n",start,finish);
-		fp=fopen(filename,"rb");
+		fp=fopen(filename,"r");
 		if (fp==NULL) {
         	status=1;
-			write(clientsockfd, &status, 1);
+        	printf("%s\n","not found!" );
+			//write(clientsockfd, &status, 1);
         //return ;
     	}
     //status=2;

@@ -27,7 +27,8 @@ void *doit(void *arg){
 	uint32_t start,finish;
 	pthread_detach(pthread_self());
 	char status;
-	char filename[256];
+	char filename[20];
+	char filePath[25];
 	int l;	//length of filename
 	//str_echo(* ( ( int *) arg)); /* same function as before */
 	//int clientsockfd;
@@ -53,7 +54,9 @@ void *doit(void *arg){
 		read(clientsockfd,&start,sizeof(uint32_t));
 		read(clientsockfd,&finish,sizeof(uint32_t));
 		printf("%d %d\n",start,finish);
-		fp=fopen(filename,"r");
+		strcpy(filePath,"Data/");
+		strcpy(filePath+5,filename);
+		fp=fopen(filePath,"r");
 		if (fp==NULL) {
         	status=1;
         	printf("%s\n","not found!" );

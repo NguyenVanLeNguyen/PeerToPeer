@@ -65,7 +65,7 @@ int Creat_ClientUpdateFileLocation_Packet(int *sockfd){
 	unsigned char Report[2000];
 	bzero(Report,2000);
 	Report[0] = 2;
-	d=opendir("Data");
+	d=opendir("../Server/Data");
 	if(d == NULL)
 	{
 	   perror("Couldn't open directory");
@@ -286,7 +286,39 @@ int main(int argc, char *argv[]) {
 	char fileName[20];
 	char rm[23];
 	fp=fopen("kien.conf","r");
-	printf("%s\n","Xin chao moi nguoi, cam on da su dung phan mem download file \"kien v1.0\" !, moi van de xin lien he tytotum0003@gmail.com");
+	int option;
+	//printf("%s\n","    |||||||||");
+printf("%s\n","                 uuuuuuu");
+printf("%s\n","             uu$$$$$$$$$$$uu");
+printf("%s\n","          uu$$$$$$$$$$$$$$$$$uu");
+printf("%s\n","         u$$$$$$$$$$$$$$$$$$$$$u");
+printf("%s\n","        u$$$$$$$$$$$$$$$$$$$$$$$u");
+printf("%s\n","       u$$$$$$$$$$$$$$$$$$$$$$$$$u");
+printf("%s\n","       u$$$$$$$$$$$$$$$$$$$$$$$$$u");
+printf("%s\n","       u$$$$$$\"   \"$$$\"   \"$$$$$$u");
+printf("%s\n","       \"$$$$\"      u$u       $$$$\"");
+printf("%s\n","        $$$u       u$u       u$$$");
+printf("%s\n","        $$$u      u$$$u      u$$$");
+printf("%s\n","         \"$$$$uu$$$   $$$uu$$$$\"");
+printf("%s\n","          \"$$$$$$$\"   \"$$$$$$$\"");
+printf("%s\n","            u$$$$$$$u$$$$$$$u");
+printf("%s\n","             u$\"$\"$\"$\"$\"$\"$u");
+printf("%s\n","  uuu        $$u$ $ $ $ $u$$       uuu");
+printf("%s\n"," u$$$$        $$$$$u$u$u$$$       u$$$$");
+printf("%s\n","  $$$$$uu      \"$$$$$$$$$\"     uu$$$$$$");
+printf("%s\n","u$$$$$$$$$$$uu    \"\"\"\"\"    uuuu$$$$$$$$$$");
+printf("%s\n","$$$$\"\"\"$$$$$$$$$$uuu   uu$$$$$$$$$\"\"\"$$$\"");
+printf("%s\n"," \"\"\"      \"\"$$$$$$$$$$$uu \"\"$\"\"\"");
+printf("%s\n","           uuuu ""$$$$$$$$$$uuu");
+printf("%s\n","  u$$$uuu$$$$$$$$$uu \"\"$$$$$$$$$$$uuu$$$");
+printf("%s\n","  $$$$$$$$$$\"\"\"\"           \"\"$$$$$$$$$$$\"");
+printf("%s\n","   \"$$$$$\"                      \"\"$$$$\"\"");
+printf("%s\n","     $$$\"                         $$$$\"");
+	printf("%s\n","Hello every body, thank for using \"kien v1.0\" download file software !,contact us tytotum0003@gmail.com");
+	printf("%s\n","Author: D0c C0^ C4'u D13n~");
+	printf("%s\n","Press 1 to download file, 2 to update list file:");
+	scanf("%d",&option);
+	printf("%d\n",option );
 	while (fscanf(fp,"%s",str)!= EOF) {
 		if (strcmp(str,"indexServerIP")==0) {
 			fscanf(fp,"%s",srvIP);
@@ -312,88 +344,94 @@ int main(int argc, char *argv[]) {
 		perror("connect");
 		return 0;
 	}
-	printf("%s","Moi ban nhap ten file: " );
-	scanf("%s",fileName);
+	if (option==1) {
+		printf("%s","Moi ban nhap ten file: " );
+		scanf("%s",fileName);
 
-	struct FileLocationRespond respond=Request_dowload(&clisockfd,fileName);
-	printf("aaahaaha%d\n",respond.numClient);
-	struct threadVar tv[10];
-	uint32_t size=respond.fileSize;
-	//printf("%d\n",size );
-	if (size%BLOCKSIZE!=0)
-		totalBlock=size/BLOCKSIZE+1;
-	else totalBlock=size/BLOCKSIZE;
-	printf("total block %d\n",totalBlock );
-	pthread_t thread[20];
-	printf("IP %s\n",inet_ntoa(respond.address[0]) );
-	//printf("IP %s\n",inet_ntoa(respond.address[1]) );
-	/*if((socketfd = socket(AF_INET, SOCK_STREAM,0)) < 0) {
-		perror("socket!!!");
-		return 0;
-	}
-	/*setup parameter for socket*/
-	/*bzero(&servaddr, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(1508);
-	servaddr.sin_addr.s_addr =  inet_addr("127.0.0.1");
-	if( connect(socketfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0 )
-	{
-		perror("connect");
-		return 0;
-	}
-	fp2=fopen("anh1.png","w");
-	downloadfile(socketfd,fileName,0,202412,fp2);
-	fclose(fp2);*/
+		struct FileLocationRespond respond=Request_dowload(&clisockfd,fileName);
+		printf("aaahaaha%d\n",respond.numClient);
+		struct threadVar tv[10];
+		uint32_t size=respond.fileSize;
+		//printf("%d\n",size );
+		if (size%BLOCKSIZE!=0)
+			totalBlock=size/BLOCKSIZE+1;
+		else totalBlock=size/BLOCKSIZE;
+		printf("total block %d\n",totalBlock );
+		pthread_t thread[20];
+		printf("IP %s\n",inet_ntoa(respond.address[0]) );
+		//printf("IP %s\n",inet_ntoa(respond.address[1]) );
+		/*if((socketfd = socket(AF_INET, SOCK_STREAM,0)) < 0) {
+			perror("socket!!!");
+			return 0;
+		}
+		/*setup parameter for socket*/
+		/*bzero(&servaddr, sizeof(servaddr));
+		servaddr.sin_family = AF_INET;
+		servaddr.sin_port = htons(1508);
+		servaddr.sin_addr.s_addr =  inet_addr("127.0.0.1");
+		if( connect(socketfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0 )
+		{
+			perror("connect");
+			return 0;
+		}
+		fp2=fopen("anh1.png","w");
+		downloadfile(socketfd,fileName,0,202412,fp2);
+		fclose(fp2);*/
 
-	for (int i=0;i<respond.numClient;i++) {
-		tv[i].IP=respond.address[i];
-		printf(" IP2 %s|\n",inet_ntoa(tv[i].IP) );
-		tv[i].fileSize=size;
-		strcpy(tv[i].fileName,fileName);
-		tv[i].num=i;
-		//downloadfile(respond->address[i].IP,1508,fileName,start,finish,fileName);
-		pthread_create(&thread[i],NULL,&doit,(void *) &tv[i]);
+		for (int i=0;i<respond.numClient;i++) {
+			tv[i].IP=respond.address[i];
+			printf(" IP2 %s|\n",inet_ntoa(tv[i].IP) );
+			tv[i].fileSize=size;
+			strcpy(tv[i].fileName,fileName);
+			tv[i].num=i;
+			//downloadfile(respond->address[i].IP,1508,fileName,start,finish,fileName);
+			pthread_create(&thread[i],NULL,&doit,(void *) &tv[i]);
 
-	}
-	for (int i=0;i<respond.numClient;i++) {
-		pthread_join(thread[i],NULL);
-	}
+		}
+		for (int i=0;i<respond.numClient;i++) {
+			pthread_join(thread[i],NULL);
+		}
 
-	//union file
-	char fileNameTmp[20];
-	for (int i=0;i<23; i++) rm[i]='\0';
-	strcpy(rm,"rm ");
-	strcpy(rm+3,fileName);
-	system(rm);
-	fp=fopen(fileName,"a");
-	for (int i=0;i<respond.numClient;i++) {
-		for(int i=0;i<20;i++) fileNameTmp[i]='\0';
-		strcpy(fileNameTmp,fileName);
-		sprintf(c,"%d",i);
-		strcpy(fileNameTmp+strlen(fileNameTmp),c);
-		fp2[i]=fopen(fileNameTmp,"r");
-	}
-
-	for (int i=0;i<totalBlock-1;i++) {
-		copyABlock(fp2[filenum[i]],fp,BLOCKSIZE);
-	}
-	copyABlock(fp2[filenum[totalBlock-1]],fp,size%BLOCKSIZE);
-
-	//remove tmp file
-	for (int i=0;i<respond.numClient;i++) {
-		for(int i=0;i<20;i++) fileNameTmp[i]='\0';
-		strcpy(fileNameTmp,fileName);
-		sprintf(c,"%d",i);
-		strcpy(fileNameTmp+strlen(fileNameTmp),c);
+		//union file
+		char fileNameTmp[20];
 		for (int i=0;i<23; i++) rm[i]='\0';
 		strcpy(rm,"rm ");
-		strcpy(rm+3,fileNameTmp);
+		strcpy(rm+3,fileName);
 		system(rm);
-	}
-	fclose(fp);
-	for (int i=0;i<respond.numClient;i++) fclose(fp2[i]);
+		fp=fopen(fileName,"a");
+		for (int i=0;i<respond.numClient;i++) {
+			for(int i=0;i<20;i++) fileNameTmp[i]='\0';
+			strcpy(fileNameTmp,fileName);
+			sprintf(c,"%d",i);
+			strcpy(fileNameTmp+strlen(fileNameTmp),c);
+			fp2[i]=fopen(fileNameTmp,"r");
+		}
 
-	printf("%s\n","Da tai xong, xin vui long kiem tra lai!" );
+		for (int i=0;i<totalBlock-1;i++) {
+			copyABlock(fp2[filenum[i]],fp,BLOCKSIZE);
+		}
+		copyABlock(fp2[filenum[totalBlock-1]],fp,size%BLOCKSIZE);
+
+		//remove tmp file
+		for (int i=0;i<respond.numClient;i++) {
+			for(int i=0;i<20;i++) fileNameTmp[i]='\0';
+			strcpy(fileNameTmp,fileName);
+			sprintf(c,"%d",i);
+			strcpy(fileNameTmp+strlen(fileNameTmp),c);
+			for (int i=0;i<23; i++) rm[i]='\0';
+			strcpy(rm,"rm ");
+			strcpy(rm+3,fileNameTmp);
+			system(rm);
+		}
+		fclose(fp);
+		for (int i=0;i<respond.numClient;i++) fclose(fp2[i]);
+
+		printf("%s\n","Da tai xong, xin vui long kiem tra lai!" );
+	}
+	else if (option==2){
+		printf("%s\n","Update file location!" );
+		Creat_ClientUpdateFileLocation_Packet(&clisockfd);
+	}
 	close(clisockfd);
 
 }

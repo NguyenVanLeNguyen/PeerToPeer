@@ -24,7 +24,7 @@ void *doit(void *arg){
 	FILE * fp; //File to send to Client
 	int r,w;
 	size_t result;
-	uint64_t start,finish;
+	uint32_t start,finish;
 	pthread_detach(pthread_self());
 	char status;
 	char filename[256];
@@ -37,51 +37,54 @@ void *doit(void *arg){
 	struct sockaddr_in addr;
 	socklen_t addr_size = sizeof(struct sockaddr_in);
 	getpeername(clientsockfd, (struct sockaddr *)&addr, &addr_size);
-	printf("%s\n",inet_ntoa(addr.sin_addr) );
+	printf("address %s\n",inet_ntoa(addr.sin_addr) );
 	sum=0;	
-
-	for (int i=0;i<256;i++) filename[i]='\0'; 	//init buffer=null
-			//for (int i=0;i<1024;i++) buffer_write[i]='\0'; 
-	read(clientsockfd,&l,sizeof(int));
-	r = read(clientsockfd,filename,l);	//Read message from client by socket
-		if (r <= 0) {
-		perror("Error reading from socket!!");
-		//return ;
-	}
-	printf("Client need file:%s\n",filename);
-	read(clientsockfd,&start,sizeof(uint64_t));
-	read(clientsockfd,&finish,sizeof(uint64_t));
-	fp=fopen(filename,"rb");
-	if (fp==NULL) {
-        status=1;
-		write(clientsockfd, &status, 1);
+	while (1) {
+		for (int i=0;i<256;i++) filename[i]='\0'; 	//init buffer=null
+				//for (int i=0;i<1024;i++) buffer_write[i]='\0'; 
+		read(clientsockfd,&l,sizeof(int));
+		r = read(clientsockfd,filename,l);	//Read message from client by socket
+			if (r <= 0) {
+			perror("Error reading from socket!!");
+			break;
+		}
+	
+		printf("Client need file:%s\n",filename);
+		read(clientsockfd,&start,sizeof(uint32_t));
+		read(clientsockfd,&finish,sizeof(uint32_t));
+		printf("%d %d\n",start,finish);
+		fp=fopen(filename,"rb");
+		if (fp==NULL) {
+        	status=1;
+			write(clientsockfd, &status, 1);
         //return ;
-    }
+    	}
     //status=2;
 	//write(clientsockfd, &status, 1);
-	fseek (fp , start , SEEK_SET);
+		fseek (fp , start , SEEK_SET);
     //lSize = ftell (fp);
     //rewind (fp);
-    sizeToRead = finish-start+1;
-    printf("%d\n",sizeToRead);
+    	sizeToRead = finish-start+1;
+    	printf("%d\n",sizeToRead);
 	//write(clientsockfd, &lSize, 4);
 	//printf("The size of the file is:%d\n",lSize);
-	while(sizeToRead > 0){
-        if (sizeToRead >= BLOCK_SIZE){
-            blockSize = BLOCK_SIZE;
-        }
-        else{
-            blockSize = sizeToRead;
-        }
-        result = fread(buffer, 1, blockSize, fp);
-        //printf("Size %d\n",blockSize);
-		buffer[result] = '\0';
-		w=write(clientsockfd,buffer,result);
-		sum=sum+w;
-        sizeToRead -= result;
-    }
-	printf("Total bytes sent:%d\n",sum);	
-	fclose(fp);
+		while(sizeToRead > 0){
+	        if (sizeToRead >= BLOCK_SIZE){
+	            blockSize = BLOCK_SIZE;
+	        }
+	        else{
+	            blockSize = sizeToRead;
+	        }
+	        result = fread(buffer, 1, blockSize, fp);
+	        //printf("Size %d\n",blockSize);
+			buffer[result] = '\0';
+			w=write(clientsockfd,buffer,result);
+			sum=sum+w;
+	        sizeToRead -= result;
+	    }
+		printf("Total bytes sent:%d\n",sum);	
+		fclose(fp);
+	}
 	pthread_mutex_lock(&mutex);
 	totalFile++;
 	printf("Total File download:%d\n",totalFile);

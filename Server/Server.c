@@ -62,6 +62,9 @@ static void *Handling(void *arg){
 							char line[30];
 						//	int size_ = 0;
 							fgets(line, 40,name_file);
+							if (feof(name_file)){
+									break;
+							}
 							//fscanf(name_file,"%s",line);
 							printf("%s\n",line);
 						//	fscanf(name_file,"%d",&size_);
@@ -89,13 +92,11 @@ static void *Handling(void *arg){
 							printf("%d\n",size_);
 							free(ipstr);
 							free(sizestr);
-							if (feof(name_file)){
-									break;
-							}
+
 
 
 						}
-						num_of_host--;
+
 						printf("num_of_host: %d\n",num_of_host );
 						memcpy((packet_respond+4),&num_of_host,sizeof(char));// write total number of ip addresses
 						fclose(name_file);
@@ -104,7 +105,7 @@ static void *Handling(void *arg){
 						//printf("%s\n", );
 
 					}
-					write(newfd,packet_respond,sizeof(packet_respond)-4);
+					write(newfd,packet_respond,sizeof(packet_respond));
 		}
 
 		else{ //ListFileReport

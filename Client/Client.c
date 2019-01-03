@@ -83,12 +83,18 @@ struct FileLocationRespond Request_dowload(int *sockfd){
 	request[0] = 1;
 	printf("Please enter the file's name: ");
 	bzero(name,sizeof(name));
+	bzero(respond,sizeof(respond));
 	scanf("%s",name);
 	printf("%s\n",name);
 	memcpy((request+1),name,strlen(name));
 	write(*sockfd,request,strlen(name)+1);
 
 	int rep = read(*sockfd,respond,sizeof(respond));
+	for(int i = 0;i < rep;i++){
+		printf("%c ", respond[i]);
+	}
+	printf("\n" );
+
 	printf("rep: %d\n",rep);
 	int size_of_file = 0;
 	memcpy(&size_of_file,respond,sizeof(int));
@@ -138,22 +144,22 @@ int main(int argc,char **agrv){
 
 
 	/*check and set buffer's size*/
-	int show_buffer_size = 0;
-	socklen_t	optlen;
-	optlen = sizeof(show_buffer_size);
-	if(getsockopt(sockfd, SOL_SOCKET,SO_RCVBUF, &show_buffer_size, &optlen) < 0)
-	perror("SO_RCVBUF getsockopt error");
-	printf("check buffer's size defaults : %d\n",show_buffer_size);
-	printf("buffer's size: ");
-	bzero(buffsz,sizeof(buffsz));
-	fgets(buffsz,sizeof(buffsz),stdin);
-	int buffsize = atol(buffsz);
-	if (setsockopt(sockfd, SOL_SOCKET,SO_RCVBUF, &buffsize, sizeof(buffsize)) < 0){
-			perror("setsockopt SO_RCVBUF failed");
-	}
-	if(getsockopt(sockfd, SOL_SOCKET,SO_RCVBUF, &show_buffer_size, &optlen) < 0)
-		perror("SO_RCVBUF getsockopt error");
-	printf("check buffer's size (after setting it): %d\n",show_buffer_size);
+	// int show_buffer_size = 0;
+	// socklen_t	optlen;
+	// optlen = sizeof(show_buffer_size);
+	// if(getsockopt(sockfd, SOL_SOCKET,SO_RCVBUF, &show_buffer_size, &optlen) < 0)
+	// perror("SO_RCVBUF getsockopt error");
+	// printf("check buffer's size defaults : %d\n",show_buffer_size);
+	// printf("buffer's size: ");
+	// bzero(buffsz,sizeof(buffsz));
+	// fgets(buffsz,sizeof(buffsz),stdin);
+	// int buffsize = atol(buffsz);
+	// if (setsockopt(sockfd, SOL_SOCKET,SO_RCVBUF, &buffsize, sizeof(buffsize)) < 0){
+	// 		perror("setsockopt SO_RCVBUF failed");
+	// }
+	// if(getsockopt(sockfd, SOL_SOCKET,SO_RCVBUF, &show_buffer_size, &optlen) < 0)
+	// 	perror("SO_RCVBUF getsockopt error");
+	// printf("check buffer's size (after setting it): %d\n",show_buffer_size);
 
 
 	printf("choose option: 1 <update list file> ; 2 <download file>; 3 <quit> \n option:");

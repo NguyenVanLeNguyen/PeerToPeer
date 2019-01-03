@@ -45,7 +45,7 @@ static void *Handling(void *arg){
 					if(access(link,F_OK) == -1){
 
 
-						printf("file not exists!");
+						printf("file not exists! \n");
 						fflush(stdout);
 						int zero = 0;
 						char zero_char = 0;
@@ -55,28 +55,23 @@ static void *Handling(void *arg){
 					}
 					else{
 						FILE *name_file = fopen(link,"r");
-						while(!feof(name_file)){
+						while(1){
 
 
 							struct in_addr ip;
 							char line[30];
-						//	int size_ = 0;
-							fgets(line, 40,name_file);
-							if (feof(name_file)){
-									break;
-							}
-							//fscanf(name_file,"%s",line);
-							printf("%s\n",line);
-						//	fscanf(name_file,"%d",&size_);
-							//fseek(name_file,1,SEEK_CUR);
+
 							char *ipstr,*sizestr;
 							 ipstr = (char *) malloc(sizeof(char) * 18);// maximum of ip addr is 15 characters
 							 sizestr = (char *) malloc(sizeof(char) * 20);
 
-							int space_index = strcspn (line," ");
-							memcpy(ipstr,(void *)line,space_index);
-							memcpy(sizestr,(line+space_index+1),(int)strlen(line)-space_index);
-
+							//int space_index = strcspn (line," ");
+							//memcpy(ipstr,(void *)line,space_index);
+							//memcpy(sizestr,(line+space_index+1),(int)strlen(line)-space_index);
+							fscanf(name_file,"%s %s",ipstr,sizestr);
+							if (feof(name_file)){
+									break;
+							}
 							int size_ = atoi(sizestr);
 							if(size_ != size_of_file){
 								size_of_file = size_;
@@ -92,9 +87,6 @@ static void *Handling(void *arg){
 							printf("%d\n",size_);
 							free(ipstr);
 							free(sizestr);
-
-
-
 						}
 
 						printf("num_of_host: %d\n",num_of_host );
@@ -116,8 +108,7 @@ static void *Handling(void *arg){
 			memcpy(&quantity,bufferr_receiver+point,sizeof(int));
 			point+=4;
 			printf("%d\n",quantity);
-			char size_name = 0;
-			char name[255];
+
 			int size_file = 0;
 
 			struct sockaddr_in addr;
@@ -129,7 +120,8 @@ static void *Handling(void *arg){
 			for(int i = 0; i < rep;i++)
 			printf("%c \n",bufferr_receiver[i]);
 			for(int i = 0;i < quantity;i++){
-
+					char size_name = 0;
+					char name[255];
 					memcpy(&size_name,bufferr_receiver+point,sizeof(char));
 					point+=sizeof(char);
 					printf("%d\n",size_name);

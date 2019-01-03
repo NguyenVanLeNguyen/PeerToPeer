@@ -31,8 +31,15 @@ void *doit(void *arg){
 	int l;	//length of filename
 	//str_echo(* ( ( int *) arg)); /* same function as before */
 	//int clientsockfd;
+
 	int clientsockfd= *((int *) arg);
+	printf("%d\n",clientsockfd);
+	struct sockaddr_in addr;
+	socklen_t addr_size = sizeof(struct sockaddr_in);
+	getpeername(clientsockfd, (struct sockaddr *)&addr, &addr_size);
+	printf("%s\n",inet_ntoa(addr.sin_addr) );
 	sum=0;	
+
 	for (int i=0;i<256;i++) filename[i]='\0'; 	//init buffer=null
 			//for (int i=0;i<1024;i++) buffer_write[i]='\0'; 
 	read(clientsockfd,&l,sizeof(int));
@@ -102,8 +109,8 @@ int main(int argc, char *argv[]) {
 
 	bzero((char *) &serv_addr, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;		//IP v4
-     	serv_addr.sin_addr.s_addr = INADDR_ANY;	//default IP address
-     	serv_addr.sin_port = htons(1508);	//Port 8899
+    serv_addr.sin_addr.s_addr = INADDR_ANY;	//default IP address
+    serv_addr.sin_port = htons(1508);	//Port 8899
 
 	if (bind(sockfd, (struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) { 	//Associate socket with IP address and port number
         perror("Error while binding");
@@ -119,6 +126,7 @@ int main(int argc, char *argv[]) {
 				continue;		/* back to for() */
 			else
 				perror("Accept error!");
+
 		}
 		pthread_create(&tid, NULL, &doit, (void *) clientsockfd);
 	}		

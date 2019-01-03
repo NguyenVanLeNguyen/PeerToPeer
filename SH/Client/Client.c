@@ -11,7 +11,7 @@
 #include <pthread.h>
 #include <dirent.h>
 //#include "kien.h"
-#define clientport 1508
+#define DEFAULT_PORT 1508
 #define serverport 8051
 #define BLOCKSIZE 8192
 
@@ -40,9 +40,10 @@ struct RequestData
 
 struct threadVar 
 {
-	int sockfd;
+	struct in_addr IP;
 	int fileSize; 
 	char fileName[20];
+	FILE *fp;
 };
 
 long sizes(FILE *file){
@@ -110,18 +111,14 @@ int Creat_ClientUpdateFileLocation_Packet(int *sockfd){
 		write(*sockfd,Report,point);
      return point;
 	}
-struct FileLocationRespond Request_dowload(int *sockfd){
+
+struct FileLocationRespond Request_dowload(int *sockfd, char *name){
 	struct FileLocationRespond respond_from_client;
 	char request[258];
 	char respond[200];
-	char name[256];
-
 	request[0] = 1;
-	printf("Please enter the file's name: ");
-	bzero(name,sizeof(name));
-	scanf("%s",name);
-	printf("%s\n",name);
 	memcpy((request+1),name,strlen(name));
+	printf("%s|\n",name );
 	write(*sockfd,request,strlen(name)+1);
 
 	int rep = read(*sockfd,respond,sizeof(respond));
@@ -189,6 +186,34 @@ struct FileLocationRespond Request_dowload(int *sockfd){
 void *doit(void *arg){
 	pthread_detach(pthread_self());
 	struct threadVar tv= *((struct threadVar *) arg);
+	printf("abc%s\n",inet_ntoa(tv.IP) );
+	int sockfd;
+	struct sockaddr_in addr;
+	FILE *fp;
+	fp=fopen(tv.fileName,"rb+");
+	printf("abc%s\n",inet_ntoa(tv.IP) );
+	if((sockfd = socket(AF_INET, SOCK_STREAM,0)) < 0) {
+		perror("socket!!!");
+		return 0;
+	}
+	else {
+		printf("%s\n","connected1!!!" );
+	}
+
+	/*setup parameter for socket*/
+	bzero(&addr, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(1508);
+	//addr.sin_addr.s_addr =  tv.IP.s_addr;
+	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	if( connect(sockfd, (struct sockaddr*) &addr, sizeof(addr)) < 0 )
+	{
+		perror("connect");
+		return 0;
+	}
+	else {
+		printf("%s\n","connected!!!" );
+	}
 	char fileName[20];
 	strcpy(fileName,tv.fileName);
 	while (blockNum<totalBlock){
@@ -197,16 +222,17 @@ void *doit(void *arg){
 		pthread_mutex_unlock(&mutex);
 		if (blockNum>totalBlock+1) break;
 		if (blockNum<totalBlock-1) 
-			downloadfile(tv.sockfd,tv.sockfd,fileName,(blockNum-1)*BLOCKSIZE,blockNum*BLOCKSIZE-1,fileName);
-		else downloadfile(tv.sockfd,tv.sockfd,fileName,(blockNum-1)*BLOCKSIZE,tv.fileSize-1,fileName);
+			downloadfile(sockfd,fileName,(blockNum-1)*BLOCKSIZE,blockNum*BLOCKSIZE-1,fp);
+		else downloadfile(sockfd,fileName,(blockNum-1)*BLOCKSIZE,tv.fileSize-1,fp);
 		
 	}
+	close(sockfd);
+	fclose(fp);
 
 }
 
-int downloadfile(int sockfd, char *filename, uint64_t start, uint64_t finish, char *tmpfile) {
+int downloadfile(int sockfd , char *filename, uint64_t start, uint64_t finish, FILE *fp) {
 	//int sockfd;
-	struct sockaddr_in addr;
 	char buffer[1024];
 	int r;
 	int w;
@@ -219,7 +245,7 @@ int downloadfile(int sockfd, char *filename, uint64_t start, uint64_t finish, ch
 	bzero((char *) &addr, sizeof(addr));
 	addr.sin_family=AF_INET;
 	addr.sin_addr.s_addr = IP;
-	addr.sin_port=htons(port);
+	addr.sin_port=htons(DEFAULT_PORT);
 	if (connect(sockfd,(struct sockaddr *) &addr,sizeof(addr)) < 0) {	//Connect to server
 		perror("Error connecting:");
 		return 1;
@@ -242,8 +268,6 @@ int downloadfile(int sockfd, char *filename, uint64_t start, uint64_t finish, ch
 		printf("%s\n","Write socket Error!" );
 	}
 	size_t fileSize=finish-start+1;
-	FILE *fp;
-	fp=fopen(tmpfile,"a");
 	fseek (fp , start , SEEK_SET);
 	while (fileSize>0) {
 		r=read(sockfd,buffer,1024);
@@ -252,7 +276,6 @@ int downloadfile(int sockfd, char *filename, uint64_t start, uint64_t finish, ch
 		fwrite(buffer,1,r,fp);
 	}
 	fclose(fp);
-	close(sockfd);
 
 }
 
@@ -313,30 +336,66 @@ int main(int argc, char *argv[]) {
 		}
 		printf("%s\n","Da tai xong, xin vui long kiem tra lai!" );
 	}*/
-	int sockfd;
+	int clisockfd;
+	int sockfd[20];
 	struct sockaddr_in	servaddr;
-	char ipsever[20];
-	printf("Please enter the ipsever: ");
-	bzero(ipsever,sizeof(ipsever));
-	fgets(ipsever,sizeof(ipsever),stdin);
-	if((sockfd = socket(AF_INET, SOCK_STREAM,0)) < 0) {
+	struct sockaddr_in addr;
+	char srvIP[20];
+	int srvPort;
+	FILE *fp;
+	FILE *fp2;
+	uint64_t start;
+	uint64_t finish;
+	char str[20];
+	char fileName[20];
+	fp=fopen("kien.conf","r");
+	printf("%s\n","Xin chao moi nguoi, cam on da su dung phan mem download file \"kien v1.0\" !, moi van de xin lien he tytotum0003@gmail.com");
+	while (fscanf(fp,"%s",str)!= EOF) {
+		if (strcmp(str,"indexServerIP")==0) {
+			fscanf(fp,"%s",srvIP);
+		}
+		else if (strcmp(str,"indexServerPort")==0) {
+			fscanf(fp,"%d",&srvPort);
+		}
+	}
+	printf("%d\n",srvPort);
+	printf("%s\n",srvIP );
+	if((clisockfd = socket(AF_INET, SOCK_STREAM,0)) < 0) {
 		perror("socket!!!");
 		return 0;
 	}
-
 	/*setup parameter for socket*/
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(14459);
-	servaddr.sin_addr.s_addr =  inet_addr(ipsever);
-	if( connect(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0 )
+	servaddr.sin_port = htons(srvPort);
+	servaddr.sin_addr.s_addr =  inet_addr(srvIP);
+	if( connect(clisockfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0 )
 	{
 		perror("connect");
 		return 0;
 	}
-	struct FileLocationRespond respond=Request_dowload(&sockfd);
-	printf("%s\n",inet_ntoa(respond.address[0]));
-	printf("%s\n",inet_ntoa(respond.address[1]));
-	close(sockfd);
+	printf("%s","Moi ban nhap ten file: " );
+	scanf("%s",fileName);
+
+	struct FileLocationRespond respond=Request_dowload(&clisockfd,fileName);
+	printf("aaahaaha%d\n",respond.numClient);
+	struct threadVar tv;
+	uint32_t size=respond.fileSize;
+	//printf("%d\n",size );
+	if (size%BLOCKSIZE!=0)
+		totalBlock=size/BLOCKSIZE+1;
+	else totalBlock=size/BLOCKSIZE;
+	pthread_t thread[20];
+
+	for (int i=0;i<respond.numClient;i++) {
+		tv.IP=respond.address[i];
+		tv.fileSize=size;
+		strcpy(tv.fileName,fileName);
+		//downloadfile(respond->address[i].IP,1508,fileName,start,finish,fileName);
+		pthread_create(thread+i,NULL,&doit,(void *) &tv);
+	}
+	
+	printf("%s\n","Da tai xong, xin vui long kiem tra lai!" );
+	close(clisockfd);
 
 }

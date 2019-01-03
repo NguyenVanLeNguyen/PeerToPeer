@@ -15,7 +15,7 @@
 //#include "kien.h"
 #define DEFAULT_PORT 1508
 #define serverport 8051
-#define BLOCKSIZE 8192
+#define BLOCKSIZE 20000000
 
 int blockNum;
 int totalBlock;
@@ -31,6 +31,7 @@ struct FileLocationRespond
 	uint32_t fileSize;
 	char numClient;
 	struct in_addr address[20];
+	
 };
 
 struct RequestData
@@ -45,7 +46,8 @@ struct threadVar
 	struct in_addr IP;
 	int fileSize; 
 	char fileName[20];
-	FILE *fp;
+	char num;
+
 };
 
 long sizes(FILE *file){
@@ -180,7 +182,7 @@ int downloadfile(int sockfd , char *filename, uint32_t start, uint32_t finish, F
 		printf("%s\n","Write socket Error!" );
 	}
 	size_t fileSize=finish-start+1;
-	fseek (fp , start , SEEK_SET);
+	//fseek (fp , start , SEEK_SET);
 	while (fileSize>0) {
 		r=read(sockfd,buffer,1024);
 		fileSize-=r;
@@ -191,13 +193,20 @@ int downloadfile(int sockfd , char *filename, uint32_t start, uint32_t finish, F
 }
 
 void *doit(void *arg){
-	//pthread_detach(pthread_self());
+	pthread_detach(pthread_self());
 	struct threadVar tv= *((struct threadVar *) arg);
-	printf("%s\n",inet_ntoa(tv.IP) );
 	int sockfd;
 	struct sockaddr_in addr;
 	FILE *fp;
-	fp=fopen(tv.fileName,"w");
+	char c[3];
+	char fileName[20];
+	char tmpfile[20];
+	strcpy(fileName,tv.fileName);
+	strcpy(tmpfile,fileName);
+	sprintf(c,"%d",(int)tv.num);
+	strcpy(tmpfile+strlen(tmpfile),c);
+	printf("tmpfile %s\n",tmpfile);
+	fp=fopen(tmpfile,"a");
 	printf("abc%s\n",inet_ntoa(tv.IP) );
 	if((sockfd = socket(AF_INET, SOCK_STREAM,0)) < 0) {
 		perror("socket!!!");
@@ -219,11 +228,9 @@ void *doit(void *arg){
 		return 0;
 	}
 	else {
-		printf("%s\n","connected!!!" );
+		printf("%s\n%d","connected!!!",(int)tv.num );
 	}
-	char fileName[20];
 	int num;
-	strcpy(fileName,tv.fileName);
 	while (1){
 		pthread_mutex_lock(&mutex);
 		num=blockNum;
@@ -248,6 +255,7 @@ int main(int argc, char *argv[]) {
 	struct sockaddr_in	servaddr;
 	struct sockaddr_in addr;
 	char srvIP[20];
+	char s[3];
 	int srvPort;
 	FILE *fp;
 	FILE *fp2;
@@ -286,7 +294,7 @@ int main(int argc, char *argv[]) {
 
 	struct FileLocationRespond respond=Request_dowload(&clisockfd,fileName);
 	printf("aaahaaha%d\n",respond.numClient);
-	struct threadVar tv;
+	struct threadVar tv[10];
 	uint32_t size=respond.fileSize;
 	//printf("%d\n",size );
 	if (size%BLOCKSIZE!=0)
@@ -294,7 +302,8 @@ int main(int argc, char *argv[]) {
 	else totalBlock=size/BLOCKSIZE;
 	printf("total block %d\n",totalBlock );
 	pthread_t thread[20];
-	
+	printf("IP %s\n",inet_ntoa(respond.address[0]) );
+	//printf("IP %s\n",inet_ntoa(respond.address[1]) );
 	/*if((socketfd = socket(AF_INET, SOCK_STREAM,0)) < 0) {
 		perror("socket!!!");
 		return 0;
@@ -312,12 +321,16 @@ int main(int argc, char *argv[]) {
 	fp2=fopen("anh1.png","w");
 	downloadfile(socketfd,fileName,0,202412,fp2);
 	fclose(fp2);*/
+
 	for (int i=0;i<respond.numClient;i++) {
-		tv.IP=respond.address[i];
-		tv.fileSize=size;
-		strcpy(tv.fileName,fileName);
+		tv[i].IP=respond.address[i];
+		printf(" IP2 %s|\n",inet_ntoa(tv[i].IP) );
+		tv[i].fileSize=size;
+		strcpy(tv[i].fileName,fileName);
+		tv[i].num=i;
 		//downloadfile(respond->address[i].IP,1508,fileName,start,finish,fileName);
-		pthread_create(thread+i,NULL,&doit,(void *) &tv);
+		pthread_create(&thread[i],NULL,&doit,(void *) &tv[i]);
+
 	}
 	for (int i=0;i<respond.numClient;i++) {
 		pthread_join(thread[i],NULL);

@@ -94,7 +94,7 @@ int Creat_ClientUpdateFileLocation_Packet(int *sockfd){
 	    name = (char *) malloc(100);
 	    namef = (char *) malloc(100);
 	    strcpy(name,de->d_name);
-	    strcpy(namef, "./Data/");
+	    strcpy(namef, "../Server/Data/");
 	    strcat(namef,name);
 	    ofile = fopen(namef,"rb");
 	    size = (int)sizes(ofile);

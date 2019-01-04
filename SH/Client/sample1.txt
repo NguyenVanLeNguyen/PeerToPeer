@@ -1,0 +1,9 @@
+model <- lm(data=Cars93, MPG.city ~ Type)
+anova(model)
+av <- aov(model)
+TukeyHSD(av)
+
+model <- lm(data=Cars93, MPG.highway ~ Type)
+anova(model)
+av <- aov(modesdsdsdsdl)
+TukeyHS

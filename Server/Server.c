@@ -41,7 +41,7 @@ static void *Handling(void *arg){
 
 					strcpy(link, "./Save/");
 					strcat(link,name);
-					printf("%s\n",link);
+					//printf("%s\n",link);
 					if(access(link,F_OK) == -1){
 
 
@@ -83,17 +83,17 @@ static void *Handling(void *arg){
 							num_of_host++;
 							memcpy((packet_respond+point_respon),&ip,sizeof(struct in_addr)); // write one ip address
 							point_respon += sizeof(struct in_addr);
-							printf("%s\n",ipstr);
-							printf("%d\n",size_);
+							//printf("name: %s\n",ipstr);
+							//printf("size: %d\n",size_);
 							free(ipstr);
 							free(sizestr);
 						}
 
-						printf("num_of_host: %d\n",num_of_host );
+						//printf("num_of_host: %d\n",num_of_host );
 						memcpy((packet_respond+4),&num_of_host,sizeof(char));// write total number of ip addresses
 						fclose(name_file);
 
-						printf("%d\n",point_respon);
+						//printf("%d\n",point_respon);
 						//printf("%s\n", );
 
 					}
@@ -117,22 +117,21 @@ static void *Handling(void *arg){
 			char *clientip;
 			clientip = (char *) malloc(sizeof(char)*20);
 			strcpy(clientip, inet_ntoa(addr.sin_addr));
-			for(int i = 0; i < rep;i++)
-			printf("%c \n",bufferr_receiver[i]);
+			printf("ip host: %s\n",clientip);
 			for(int i = 0;i < quantity;i++){
 					char size_name = 0;
 					char name[255];
 					memcpy(&size_name,bufferr_receiver+point,sizeof(char));
 					point+=sizeof(char);
-					printf("%d\n",size_name);
+					//printf("%d\n",size_name);
 
 					memcpy(name,bufferr_receiver+point,(int)size_name);
 					point+=(int)size_name;
-					printf("%s\n",name);
+					printf("name file: %s\t",name);
 
 					memcpy(&size_file,bufferr_receiver+point,sizeof(int));
 					point+=sizeof(int);
-					printf("%d\n",size_file);
+					printf("size: %d\n",size_file);
 
 					char *link;
 					link = (char *) malloc(sizeof(char)*255);
@@ -140,7 +139,7 @@ static void *Handling(void *arg){
 					strcat(link,name);
 
 
-					printf("%s\n",link);
+					//printf("%s\n",link);
 					int flag = 1;
 					if(!(access(link,F_OK) == -1)){
 					FILE *nchek_file = fopen(link,"r");
@@ -156,14 +155,14 @@ static void *Handling(void *arg){
 						}
 						if(!strcmp(clientip,ipstr)){
 							flag =0;
-							printf("clientip: %s\n", clientip);
-							printf("ipstr: %s\n", ipstr);
+							//printf("clientip: %s\n", clientip);
+							//printf("ipstr: %s\n", ipstr);
 							free(ipstr);
 
 							break;
 						}
 						free(ipstr);
-						
+
 					}
 					fclose(nchek_file);
 					}
